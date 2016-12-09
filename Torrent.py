@@ -27,8 +27,13 @@ class Torrent(object):
 		self.event = "started"
 		self.port = LOCAL_PORT
 		self.param_dict = {'info_hash':self.info_hash, 'peer_id':self.peer_id, 'port':self.port,
-                           'uploaded':self.uploaded,'downloaded':self.download, 'left':self.left, 
-                           'compact':self.compact, 'no_peer_id':self.no_peer_id, 'event':self.event}
+							'uploaded':self.uploaded,'downloaded':self.download, 'left':self.left, 
+							'compact':self.compact, 'no_peer_id':self.no_peer_id, 'event':self.event}
+		pieces = self.info['pieces']
+		self.pieces_array = []
+		while len(pieces) > 0:
+			self.pieces_array.append(pieces[0:20])
+			pieces = pieces[20:]
 
 	def __str__(self):
 		return "Torrent: announce %s \nlength %d\comment %s\ninfo_hash:%s\n" % (self.announce, self.length, self.comment, self.info_hash)
