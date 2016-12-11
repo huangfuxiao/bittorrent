@@ -4,6 +4,7 @@ import requests
 import string
 import random
 import os
+import math
 
 PEER_ID_INIT = '-UT1000-'
 LOCAL_PORT = 6888
@@ -31,9 +32,12 @@ class Torrent(object):
 							'compact':self.compact, 'no_peer_id':self.no_peer_id, 'event':self.event}
 		pieces = self.info['pieces']
 		self.pieces_array = []
+		total_pieces = 0
 		while len(pieces) > 0:
 			self.pieces_array.append(pieces[0:20])
 			pieces = pieces[20:]
+			total_pieces = total_pieces + 1
+		self.total_pieces = total_pieces
 
 	def __str__(self):
 		return "Torrent: announce %s \nlength %d\comment %s\ninfo_hash:%s\n" % (self.announce, self.length, self.comment, self.info_hash)
@@ -84,6 +88,12 @@ class Torrent(object):
 				peer_addr = ''
 				port = 0
 		return peer_list
+
+	def get_num_pieces(self):
+		return len(self.pieces_array)
+		
+	def get_num_blocks(self):
+		return math.ceil(self.piece_length/2**14)
 
 def main():
     this_torrent = Torrent("InPraiseOfIdleness_archive.torrent")

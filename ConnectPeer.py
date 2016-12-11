@@ -1,12 +1,12 @@
-from time import time
+from time import time, sleep
 from twisted.internet.protocol import Protocol, ClientFactory
 from twisted.internet import reactor, task, defer
 from bitstring import BitArray
 from Torrent import Torrent
 import constants
 import messages
-
-MSG_INTERESTED = ''
+from message import *
+import sys
 
 class PeerConnection(object):
 	def __init__(self, torrent):
@@ -45,7 +45,7 @@ class PeerProtocol(Protocol):
 
     def handle_received_data(self,data):
         print "Handle received data gets started here!"
-        msg_to_write = []
+        msg_to_send = []
         if self.message_buffer:
             self.message_buffer.extend(bytearray(data))
         else:
@@ -56,16 +56,99 @@ class PeerProtocol(Protocol):
             msg_rcvd = self.message_buffer[:68]
             print "This is the mesage received: ", msg_rcvd
             self.message_buffer = self.message_buffer[68:]
-            print "This is msg to write before append: ", msg_to_write
-            # print "This is messages' interested: ", messages.Interested()
-            msg_to_write.append(messages.Interested())
-            print "This is msg to write after append: ", msg_to_write
-            print "This is the length of message buffer: ", len(self.message_buffer)
+            print "This is msg to write before append: ", msg_to_send
+            # msg_to_send.append(messages.Interested())
+            msg_to_send.append(create_message('INTERESTED', -1, -1, -1, -1))
+            print "This is msg to write after append: ", msg_to_send
             self.interested = True
-        return msg_to_write
+        if len(self.message_buffer) >= 4:
+            message_length = bytes_to_number(self.message_buffer[0:4]) + 4
+            i = 0
+            while len(self.message_buffer) >= message_length:
+                length = bytes_to_number(self.message_buffer[0:4]) + 4 
+                this_msg = self.message_buffer[:length]
+                response = self.get_response_msg(this_msg)
+                self.get_next_send_msg(response, msg_to_send)
+                sleep(0.1)
+                i = i+1
+                print "This is the i's block received: ", i
+                # msg_to_send.append(self.get_next_send_msg(response))
+                # Move to next message
+                self.message_buffer = self.message_buffer[length:]
+                message_length = bytes_to_number(self.message_buffer[0:4])+4
+        return msg_to_send
 
     def connectionLost(self, reason):
         self.factory.protocols.remove(self)
+
+    def get_response_msg(self, message_buffer):
+        msg_list = ['CHOKE', 'UNCHOKE', 'INTERESTED', 'NOTINTERESTED', 'HAVE', 'BITFIELD', 'REQUEST', 'PIECE', 'CANCEL', 'PORT']
+        if(len(message_buffer) == 4):
+            response_msg = 'KEEPALIVE'
+        else:
+            id = message_buffer[4]
+            if (id>9) | (id<0):
+                response_msg = ''
+            else:
+                response_msg = msg_list[id]
+        return response_msg
+
+    def get_next_send_msg(self, msg_type, msg_list):
+        msg_to_send = ''
+        if(msg_type == 'CHOKE'):
+            print 'Received message: Choked'
+            self.choked = True
+        elif(msg_type == 'UNCHOKE'):
+            print 'Received message: Unchoke'
+            self.choked = False
+            total_num_pieces = self.factory.torrent.get_num_pieces()
+            total_num_blocks = self.factory.torrent.get_num_blocks()
+            # msg_to_send = create_message('REQUEST', 0, 0, 2**14, -1)
+            # msg_list.append(msg_to_send)
+            i=0
+            for piece in range(0, int(total_num_pieces)):
+                offset = 0
+                for block in range(0, int(total_num_blocks)):
+                    # create_message('REQUEST', piece, offset, 2**14, -1)
+                    msg_list.append(create_message('REQUEST', piece, offset, 2**14, -1))
+                    offset = offset + 2**14
+                    i = i+1
+                    # sleep(1)
+            print 'Here are number of pieces, blocks, i: ', total_num_pieces, total_num_blocks, i
+            # create_message('REQUEST', 0, 0, 2**14, -1)
+            # msg_to_send = create_message('REQUEST')
+            # TO BE IMPLEMENTED
+            # send_next_request()
+        elif(msg_type == 'INTERESTED'):
+            print 'Received message: Interested'
+        elif(msg_type == 'UNINTERESTED'):
+            print 'Received message: Uninterested'
+        elif(msg_type == 'HAVE'):
+            print 'Received message: Have'
+            # TO BE IMPLEMENTED
+            
+        elif(msg_type == 'BITFIELD'):
+            print 'Received message: Bitfield'
+            # TO BE IMPLEMENTED
+            
+        elif(msg_type == 'REQUEST'):
+            print 'Received message: Request'
+            # TO BE IMPLEMENTED
+            
+        elif(msg_type == 'PIECE'):
+            print 'Received message: Piece'
+            # TO BE IMPLEMENTED
+            
+        elif(msg_type == 'CANCEL'):
+            print 'Received message: Cancel'
+            
+        elif(msg_type == 'PORT'):
+            print 'Received message: Port'
+            
+        return msg_to_send
+
+        
+        
 
 class Factory(ClientFactory):
     def __init__(self, torrent):

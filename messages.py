@@ -23,35 +23,6 @@ def bytes_to_number(bytestring):
         i -= 1
     return number
 
-class Handshake(object):
-    """Represents a handshake object
-        Has 2 inits to create from incoming bytestring or from info_hash and peer_id
-        for outgoing handshake.
-    """
-    def __init__(self,*args):
-        if len(args) == 1: self.__setup1(*args)
-        elif len(args) == 2: self.__setup2(*args)  
-        
-    def __setup1(self,payload):
-        self.pstrlen = payload[0]
-        self.pstr = payload[1:20]  #pstrlen assumed = 19; might not be true (if in another protocol)
-        self.reserved = payload[20:28]
-        self.info_hash = payload[28:48]
-        self.peer_id = payload[48:68]
-
-    def __setup2(self,info_hash,peer_id):
-        self.pstrlen = chr(19)
-        self.pstr = "BitTorrent protocol"
-        self.reserved = "\x00\x00\x00\x00\x00\x00\x00\x00"
-        self.info_hash = info_hash
-        self.peer_id = peer_id
-
-    def __str__(self):
-        return self.pstrlen+self.pstr+self.reserved+self.info_hash+self.peer_id
-
-    def __len__(self):
-        return 49+ord(self.pstrlen)
-
 class Message(object):
     """This is for everything but Handshake
         If you subclass this, you should provide class attributes for:
