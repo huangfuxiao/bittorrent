@@ -3,10 +3,15 @@ from twisted.internet.protocol import Protocol, ClientFactory
 from twisted.internet import reactor, task, defer
 from bitstring import BitArray
 from Torrent import Torrent
+from Piece import Block, Piece, FileWriter
 import constants
 import messages
 from message import *
 import sys
+import os
+
+BLOCK_SIZE = 2**14
+PIECE_SIZE = 2**19
 
 class PeerConnection(object):
 	def __init__(self, torrent):
@@ -68,10 +73,7 @@ class PeerProtocol(Protocol):
                 length = bytes_to_number(self.message_buffer[0:4]) + 4 
                 this_msg = self.message_buffer[:length]
                 response = self.get_response_msg(this_msg)
-                self.get_next_send_msg(response, msg_to_send)
-                sleep(0.1)
-                i = i+1
-                print "This is the i's block received: ", i
+                self.get_next_send_msg(response, msg_to_send, this_msg)
                 # msg_to_send.append(self.get_next_send_msg(response))
                 # Move to next message
                 self.message_buffer = self.message_buffer[length:]
@@ -91,9 +93,16 @@ class PeerProtocol(Protocol):
                 response_msg = ''
             else:
                 response_msg = msg_list[id]
+                if (id == 7):
+                    msg_length = bytes_to_number(message_buffer[0:4])
+                    index = bytes_to_number(message_buffer[5:9])
+                    begin = bytes_to_number(message_buffer[9:13])
+                    # block = bytes_to_number(message_buffer[13:17])
+                    print "Piece index, begin, block, msg_length: ", index, begin, len(message_buffer[13:]), msg_length
+
         return response_msg
 
-    def get_next_send_msg(self, msg_type, msg_list):
+    def get_next_send_msg(self, msg_type, msg_list, message_buffer):
         msg_to_send = ''
         if(msg_type == 'CHOKE'):
             print 'Received message: Choked'
@@ -106,14 +115,27 @@ class PeerProtocol(Protocol):
             # msg_to_send = create_message('REQUEST', 0, 0, 2**14, -1)
             # msg_list.append(msg_to_send)
             i=0
-            for piece in range(0, int(total_num_pieces)):
+            for piece in range(0, int(total_num_pieces-1)):
+            # for piece in range(0, 2):
                 offset = 0
                 for block in range(0, int(total_num_blocks)):
                     # create_message('REQUEST', piece, offset, 2**14, -1)
-                    msg_list.append(create_message('REQUEST', piece, offset, 2**14, -1))
+                    msg_list.append(create_message('REQUEST', piece, offset, BLOCK_SIZE, -1))
                     offset = offset + 2**14
                     i = i+1
-                    # sleep(1)
+                    sleep(0.1)
+                    # print "This is the i's block received: ", i
+            last_num_blocks = self.factory.torrent.get_last_num_blocks()
+            last_block_length = self.factory.torrent.get_last_block_length()
+            piece = total_num_pieces-1
+            offset = 0
+            for block in range(0, int(last_num_blocks-1)):
+                msg_list.append(create_message('REQUEST', piece, offset, BLOCK_SIZE, -1))
+                offset = offset + 2**14
+                i = i+1
+                sleep(0.1)
+            msg_list.append(create_message('REQUEST', piece, offset, last_block_length, -1))
+
             print 'Here are number of pieces, blocks, i: ', total_num_pieces, total_num_blocks, i
             # create_message('REQUEST', 0, 0, 2**14, -1)
             # msg_to_send = create_message('REQUEST')
@@ -138,6 +160,10 @@ class PeerProtocol(Protocol):
         elif(msg_type == 'PIECE'):
             print 'Received message: Piece'
             # TO BE IMPLEMENTED
+            msg_length = bytes_to_number(message_buffer[0:4])
+            index = bytes_to_number(message_buffer[5:9])
+            begin = bytes_to_number(message_buffer[9:13])
+
             
         elif(msg_type == 'CANCEL'):
             print 'Received message: Cancel'
@@ -173,16 +199,27 @@ class Factory(ClientFactory):
 
 def main():
     this_torrent = Torrent("InPraiseOfIdleness_archive.torrent")
-    # print this_torrent
+    print this_torrent.get_num_pieces()
+    print this_torrent.get_num_blocks()
+    print this_torrent.get_last_num_blocks()
+    print this_torrent.get_last_block_length()
     peer_list = this_torrent.get_peer_list()
     print peer_list
     this_factory = Factory(this_torrent)
-    for peer in peer_list:
-        hostandport = peer.split(':')
-        reactor.connectTCP(hostandport[0], int(hostandport[1]), this_factory)
-        # print this_factory.torrent
-        # print this_factory.protocols
-    reactor.run()
+
+    if os.path.exists("test.txt"):
+        file_to_write = open("test.txt", "rb+")
+    else:
+        file_to_write = open("test.txt", "w+")
+    f = open("test.txt", "r+")
+
+    file_to_write = FileWriter(this_torrent.length, file_to_write, this_torrent.pieces_array)
+    # for peer in peer_list:
+    #     hostandport = peer.split(':')
+    #     reactor.connectTCP(hostandport[0], int(hostandport[1]), this_factory)
+    #     # print this_factory.torrent
+    #     # print this_factory.protocols
+    # reactor.run()
 
 
 if __name__ == "__main__":

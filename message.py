@@ -2,6 +2,7 @@ TEST_HAVE_PIECE_INDEX = 99
 TEST_REQ_PIECE_INDEX = 0
 TEST_REQ_BLOCK_INDEX = 0
 TEST_LISTEN_PORT = 8888
+BLOCK_SIZE = 2**14
 
 def number_to_bytes(number):  
     '''returns a number 4 bytes long'''
@@ -44,7 +45,7 @@ def create_message(msg_type, index, begin, length, port):
     elif(msg_type == 'BITFIELD'):
         return_msg = number_to_bytes(1) + chr(5)
     elif(msg_type == 'REQUEST'):
-        return_msg = number_to_bytes(13)+ chr(6) + number_to_bytes(TEST_REQ_PIECE_INDEX) + number_to_bytes(TEST_REQ_BLOCK_INDEX) + number_to_bytes(1024)
+        return_msg = number_to_bytes(13)+ chr(6) + number_to_bytes(index) + number_to_bytes(begin) + number_to_bytes(length)
     elif(msg_type == 'PIECE'):
         return_msg = number_to_bytes(9) + chr(7) + number_to_bytes(index) + number_to_bytes(begin)
     elif(msg_type == 'CANCEL'):

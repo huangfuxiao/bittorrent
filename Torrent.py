@@ -91,21 +91,36 @@ class Torrent(object):
 
 	def get_num_pieces(self):
 		return len(self.pieces_array)
-		
+
 	def get_num_blocks(self):
-		return math.ceil(self.piece_length/2**14)
+		return int(math.ceil(self.piece_length/2**14))
 
-def main():
-    this_torrent = Torrent("InPraiseOfIdleness_archive.torrent")
-    print this_torrent
-    peer_list = this_torrent.get_peer_list()
-    print peer_list
-    	# peer_list = this_torrent.get_peer_list()
-    	# print this_torrent
-    	# print peer_list
+	def get_last_num_blocks(self):
+		total_pieces = len(self.pieces_array)
+		last_piece_length = self.length - (total_pieces-1)*self.piece_length
+		block_size = 2**14
+		num_blocks_last = math.ceil(float(last_piece_length)/block_size)
+		return int(num_blocks_last)
 
-if __name__ == "__main__":
-    main()
+	def get_last_block_length(self):
+		total_pieces = len(self.pieces_array)
+		last_piece_length = self.length - (total_pieces-1)*self.piece_length
+		block_size = 2**14
+		num_blocks_last = math.ceil(float(last_piece_length)/block_size)
+		last_block_length = last_piece_length - (num_blocks_last-1)*block_size
+		return int(last_block_length)
+
+# def main():
+#     this_torrent = Torrent("InPraiseOfIdleness_archive.torrent")
+#     print this_torrent
+#     peer_list = this_torrent.get_peer_list()
+#     print peer_list
+#     	# peer_list = this_torrent.get_peer_list()
+#     	# print this_torrent
+#     	# print peer_list
+
+# if __name__ == "__main__":
+#     main()
 
 
 
