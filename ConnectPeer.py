@@ -34,6 +34,8 @@ class PeerProtocol(Protocol):
         # self.pending_requests = 0
         # self.choked = True
         self.message_timeout = time() #mark for sending KeepAlives
+        self.last_piece = self.factory.torrent.get_num_pieces() -1
+        self.last_block = self.factory.torrent.get_last_num_blocks() -1
 
     def connectionMade(self):
         print "connection made"
@@ -43,12 +45,12 @@ class PeerProtocol(Protocol):
 
     def dataReceived(self,data):
         self.message_timeout = time()
-        # if not self.factory.torrent.file_to_write.is_file_full():
-        msg_to_send = self.handle_received_data(data)
-        for i,message in enumerate(msg_to_send):
-            if message is not None:
-                self.transport.write(str(message))
-                self.message_timeout = time()
+        if not self.factory.torrent.file_to_write.is_file_full():
+            msg_to_send = self.handle_received_data(data)
+            for i,message in enumerate(msg_to_send):
+                if message is not None:
+                    self.transport.write(str(message))
+                    self.message_timeout = time()
 
     def handle_received_data(self,data):
         # print "Handle received data gets started here!"
@@ -95,10 +97,10 @@ class PeerProtocol(Protocol):
                 message_length = bytes_to_number(self.message_buffer[0:4])+4
 
 
-        if self.factory.torrent.file_to_write.is_file_full():
-            print "File is completely downloaded"
-            self.factory.torrent.write_to_file()
-            self.factory.download_finished[0] = True
+        # if self.factory.torrent.file_to_write.is_file_full():
+        #     print "File is completely downloaded"
+        #     self.factory.torrent.write_to_file()
+        #     self.factory.download_finished[0] = True
         return msg_to_send
 
     def connectionLost(self, reason):
@@ -195,7 +197,14 @@ class PeerProtocol(Protocol):
             piece.fill_the_block(block_index, block_content)
             piece.write()
             self.last_block_rcvd = index*32+block_index+1
-            msg_list.append(self.get_next_request())
+            next_msg= self.get_next_request()
+            if next_msg == '':
+                print "File is completely downloaded"
+                self.factory.torrent.write_to_file()
+                self.factory.download_finished[0] = True
+            msg_list.append(next_msg)
+            # if index == self.last_piece and block_index == self.last_block:
+            #     self.factory.download_finished[0] = True
             
         elif(msg_type == 'CANCEL'):
             print 'Received message: Cancel'
@@ -230,6 +239,8 @@ class PeerProtocol(Protocol):
         if not piece.block_list[last_num_blocks-1].is_block_full():
             # print piece_index, offset, last_block_length
             return create_message('REQUEST', total_num_pieces-1, offset, last_block_length, -1)
+
+        return ''
 
 
 class Factory(ClientFactory):

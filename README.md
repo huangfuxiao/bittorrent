@@ -109,6 +109,20 @@ Handle the incoming TCP data properly based on the message type;
 #### Description:
 Prepare a message to send based on the to-send message's type;  
 
+
+================================================================================================================
+                                            USAGE
+================================================================================================================
+#### Turn on:
+* python driver.py TORRENT_FILE_NAME; 
+* for example: python driver.py bub_ht_011203476_archive.torrent;
+#### Valid Command:
+* info: get the basic information about the torrent file;
+* peers: get the peers that's currently connecting to;
+* status: get the downloading status, including how many bytes that have been downloaded, and how many percentage that's completed;
+* quit: quit the entire program
+
+
 ================================================================================================================
                                             DOWNLOADING ALGORITHM
 ================================================================================================================
@@ -117,3 +131,11 @@ Prepare a message to send based on the to-send message's type;
 * Send the peers a Handshake message and wait for it's "Bitfield"/"Unchoke" messages;
 * Once received the peer's "Unchoke" message, send 10 block requests to the peer;
 * Every time when receving a "Piece" message, send the next block request where block is empty;
+
+
+================================================================================================================
+                                            PROBLEMS & BUGS
+================================================================================================================
+* Performance is very slow due to the piece requesting algorithm;
+* It doesn't support seeding to other peers; only downloading from peers;
+
