@@ -65,8 +65,8 @@ class Piece(object):
                 bytes_to_write = bytes_to_write + block.block_content
             self.file_to_write.seek(self.index * self.piece_length)
             self.file_to_write.write(bytes_to_write)
-            print self.index, self.piece_length
-            print self.bitmap
+            # print self.index, self.piece_length
+            # print self.bitmap
             # print self.index
 
 

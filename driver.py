@@ -56,19 +56,18 @@ def main():
 		input = raw_input('>')
 		cmd = input.split(' ')
 		cmd = cmd[0]
-		print cmd
-		if cmd == 'help' :
+		if cmd == 'help' or cmd == 'h' :
 			print "Valid commands: info, peers, status, quit"
-		elif cmd == 'info':
+		elif cmd == 'info' or cmd == 'i' :
 			print "Torrent file's information: "
 			print "        total length (in byte): ", this_torrent.length
 			print "        total number of pieces: ", this_torrent.get_num_pieces()
 			print "        total number of blocks: ", int(this_torrent.get_total_num_blocks())
-		elif cmd == 'peers' :
+		elif cmd == 'peers' or cmd == 'p' :
 			print peer_list
-		elif cmd == 'status' :
+		elif cmd == 'status' or cmd == 's' :
 			this_torrent.get_statistics()
-		elif cmd == 'quit' :
+		elif cmd == 'quit' or cmd == 'q' :
 			exit(1)
 		else:
 			print "Valid commands: info, peers, status, quit"

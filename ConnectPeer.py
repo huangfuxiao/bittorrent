@@ -29,11 +29,10 @@ class PeerConnection(object):
 class PeerProtocol(Protocol):
     def __init__(self, factory):
         self.factory = factory
-        self.peer_has_pieces = BitArray(len(self.factory.torrent.pieces_array))
+        # self.peer_has_pieces = BitArray(len(self.factory.torrent.pieces_array))
         self.message_buffer = bytearray()
-        self.pending_requests = 0
-        self.interested = False
-        self.choked = True
+        # self.pending_requests = 0
+        # self.choked = True
         self.message_timeout = time() #mark for sending KeepAlives
 
     def connectionMade(self):
@@ -68,7 +67,6 @@ class PeerProtocol(Protocol):
             # msg_to_send.append(messages.Interested())
             msg_to_send.append(create_message('INTERESTED', -1, -1, -1, -1))
             # print "This is msg to write after append: ", msg_to_send
-            self.interested = True
         if len(self.message_buffer) >= 4:
             message_length = bytes_to_number(self.message_buffer[0:4]) + 4
             i = 0
@@ -129,10 +127,10 @@ class PeerProtocol(Protocol):
         msg_to_send = ''
         if(msg_type == 'CHOKE'):
             print 'Received message: Choked'
-            self.choked = True
+            # self.choked = True
         elif(msg_type == 'UNCHOKE'):
             print 'Received message: Unchoke'
-            self.choked = False
+            # self.choked = False
             offset = 0
             for i in range(10):
                 msg_list.append(create_message('REQUEST', 0, offset, BLOCK_SIZE, -1))
@@ -256,14 +254,14 @@ class Factory(ClientFactory):
     def clientConnectionFailed(self,connector,reason):
         print 'Connection failed. Reason: ', reason
 
-def disconnect_thread(factory):
-    while 1:
-        if factory.download_finished[0]:
-            print "Disconnecting..."
-            # connector.disconnect()
-            reactor.stop()
-            return
-        sleep(10)
+# def disconnect_thread(factory):
+#     while 1:
+#         if factory.download_finished[0]:
+#             print "Disconnecting..."
+#             # connector.disconnect()
+#             reactor.stop()
+#             return
+#         sleep(10)
 
 # def main():
 #     if os.path.exists("test"):
