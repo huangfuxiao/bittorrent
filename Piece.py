@@ -15,10 +15,10 @@ class Block(object):
     def is_block_full(self):
         return self.full
 
-    def get_info(self):
-        print 'length of block_content: ' + str(len(self.block_content))
-        print 'block_length:            ' + str(self.block_length)
-        print 'equal?                   ' + str(len(self.block_content) == self.block_length)
+    # def get_info(self):
+    #     print 'length of block_content: ' + str(len(self.block_content))
+    #     print 'block_length:            ' + str(self.block_length)
+    #     print 'equal?                   ' + str(len(self.block_content) == self.block_length)
 
     def write(self, block_content):
         self.block_content = block_content 
@@ -42,17 +42,21 @@ class Piece(object):
             self.block_list.append(Block(self.num_blocks, last_block_length))
             self.num_blocks = self.num_blocks + 1
         self.bitmap = BitMap(self.num_blocks)
+        # if self.index == 16:
+        #     print "init bm: ", self.bitmap 
 
     def is_piece_full(self):
-        for block in self.block_list:
+        for block in range(len(self.block_list)):
             if not self.block_list[block].is_block_full():
                 return False
         return True
 
     def fill_the_block(self, block_index, block_content):
-        self.block_list[block_index].write(block_content)
         if self.block_list[block_index].is_block_full():
-            self.bitmap.set(block_index)
+            return
+        self.block_list[block_index].write(block_content)
+        self.bitmap.set(block_index)
+
 
     def write(self):
         if self.bitmap.all():
@@ -60,7 +64,11 @@ class Piece(object):
             for block in self.block_list:
                 bytes_to_write = bytes_to_write + block.block_content
             self.file_to_write.seek(self.index * self.piece_length)
-            self.file.write(bytes_to_write)
+            self.file_to_write.write(bytes_to_write)
+            print self.index, self.piece_length
+            print self.bitmap
+            # print self.index
+
 
 class FileWriter(object):
     def __init__(self, total_length, file_to_write, piece_hash_array):
@@ -73,10 +81,12 @@ class FileWriter(object):
             self.piece_list.append(Piece(self.num_pieces, last_piece_length, file_to_write, piece_hash_array[self.num_pieces]))
             self.num_pieces = self.num_pieces + 1
         self.bitmap = BitMap(self.num_pieces)
+        # print "self.num_pieces, init bm: ", self.num_pieces, self.bitmap
 
     def is_file_full(self):
-        for piece in self.piece_list:
-            if not self.piece_list[piece].bitmap.all():
+        for piece in range(len(self.piece_list)):
+            # print piece, self.piece_list[piece].bitmap.size()
+            if not self.piece_list[piece].is_piece_full():
                 return False
         return True
 
